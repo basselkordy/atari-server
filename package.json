@@ -1,0 +1,26 @@
+{
+  "name": "game-server",
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "yarn@4.9.1",
+  "scripts": {
+    "comment": "Change Code Page to 65001 (aka UTF-8), then run my shit",
+    "dev": "chcp 65001 && tsx watch --env-file=.env src/index.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "human-readable-ids": "^1.0.4",
+    "pino": "^10.3.0",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.10",
+    "@types/ws": "^8.18.1",
+    "pino-pretty": "^13.1.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
