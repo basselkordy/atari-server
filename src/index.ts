@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer } from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
+// @ts-ignore
 import { hri } from "human-readable-ids";
 
 import logger from "./logger";

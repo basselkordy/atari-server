@@ -7,15 +7,28 @@ export interface Dot {
 
 export class World {
   private dots: Map<string, Dot>;
+  private availableColors: string[];
+  private usedColors: Set<string>;
 
   constructor() {
     this.dots = new Map();
+    this.availableColors = [
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#FFA07A",
+      "#98D8C8",
+      "#F7DC6F",
+      "#BB8FCE",
+      "#85C1E2",
+    ];
+    this.usedColors = new Set();
   }
 
   addDot(playerId: string): void {
-    const x = Math.random() * 800;
-    const y = Math.random() * 600;
-    const color = this.randomColor();
+    const x = Math.random() * 450;
+    const y = Math.random() * 450;
+    const color = this.getAvailableColor();
 
     this.dots.set(playerId, {
       id: playerId,
@@ -23,6 +36,8 @@ export class World {
       y,
       color,
     });
+
+    this.usedColors.add(color);
   }
 
   move(playerId: string, deltaX: number, deltaY: number): void {
@@ -34,6 +49,10 @@ export class World {
   }
 
   removeDot(playerId: string): void {
+    const dot = this.dots.get(playerId);
+    if (dot) {
+      this.usedColors.delete(dot.color);
+    }
     this.dots.delete(playerId);
   }
 
@@ -41,17 +60,16 @@ export class World {
     return Array.from(this.dots.values());
   }
 
-  private randomColor(): string {
-    const colors = [
-      "#FF6B6B",
-      "#4ECDC4",
-      "#45B7D1",
-      "#FFA07A",
-      "#98D8C8",
-      "#F7DC6F",
-      "#BB8FCE",
-      "#85C1E2",
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
+  private getAvailableColor(): string {
+    const unused = this.availableColors.filter((c) => !this.usedColors.has(c));
+
+    if (unused.length === 0) {
+      // All colors taken, pick any
+      return this.availableColors[
+        Math.floor(Math.random() * this.availableColors.length)
+      ];
+    }
+
+    return unused[Math.floor(Math.random() * unused.length)];
   }
 }
