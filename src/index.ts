@@ -57,13 +57,27 @@ function broadcastSync() {
       sentCount++;
     }
   });
-  logger.info(`Broadcasted SYNC to ${sentCount} client(s)`);
+  logger.debug(`Broadcasted SYNC to ${sentCount} client(s)`);
 }
 
 const wss = new WebSocketServer({ server });
 
 const players = new Map<WebSocket, { id: string; host: string }>();
 const world = new World();
+
+
+function handleMessage(message: any) {
+  if (message.type == "INTENT") {
+    world.move(
+      message.payload.id,
+      message.payload.deltaX,
+      message.payload.deltaY,
+    );
+    broadcastSync();
+  }
+  else logger.info("bazinga", message);
+}
+
 
 wss.on("connection", (ws, req) => {
   const host = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
@@ -85,7 +99,9 @@ wss.on("connection", (ws, req) => {
   broadcastSync();
 
   ws.on("message", (data) => {
-    logger.info(`Received message: ${data}`);
+    logger.debug(`Received message: ${data}`);
+    const message = JSON.parse(data.toString());
+    handleMessage(message);
   });
 
   ws.on("close", () => {
@@ -97,6 +113,12 @@ wss.on("connection", (ws, req) => {
     broadcastSync();
   });
 });
+
+
+
+
+
+
 
 app.get("/", (req, res) => {
   logger.info("Root endpoint hit");
