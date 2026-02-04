@@ -1,11 +1,6 @@
-export interface Dot {
-  id: string;
-  x: number;
-  y: number;
-  color: string;
-}
+import { Dot } from "./types";
 
-export class World {
+export class StateManager {
   private dots: Map<string, Dot>;
   private availableColors: string[];
   private usedColors: Set<string>;
@@ -43,9 +38,18 @@ export class World {
   move(playerId: string, deltaX: number, deltaY: number): void {
     const dot = this.dots.get(playerId);
     if (dot) {
-      dot.x += deltaX;
-      dot.y += deltaY;
+      const newX = dot.x + deltaX;
+      const newY = dot.y + deltaY;
+
+      if (this.checkBoundaries(newX, newY)) {
+        dot.x = newX;
+        dot.y = newY;
+      }
     }
+  }
+
+  private checkBoundaries(x: number, y: number): boolean {
+    return x >= 0 && x <= 450 && y >= 0 && y <= 450;
   }
 
   removeDot(playerId: string): void {
