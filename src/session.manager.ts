@@ -11,12 +11,14 @@ import { MessageFactory } from "./message.factory";
 
 export class SessionManager {
   private players: Map<WebSocket, Player>;
+  private readonly tickRateMs = 1000 / 60;
 
   constructor(
     private world: StateManager,
     private network: NetworkManager,
   ) {
     this.players = new Map<WebSocket, Player>();
+    this.startTickLoop();
   }
 
   public handleConnection(ws: WebSocket, req: IncomingMessage): void {
@@ -31,9 +33,6 @@ export class SessionManager {
     ws.send(JSON.stringify(welcomeMessage));
     logger.info(`Sent WELCOME to ${playerId}`);
 
-    // Broadcast SYNC
-    this.broadcastSync();
-
     // Setup event handlers
     ws.on("message", (data) => {
       logger.debug(`Received message from ${playerId}: ${data}`);
@@ -45,7 +44,6 @@ export class SessionManager {
       logger.info(`Client ${playerId} disconnected`);
       this.removePlayer(ws);
       this.world.removeDot(playerId);
-      this.broadcastSync();
     });
   }
 
@@ -56,10 +54,16 @@ export class SessionManager {
         message.payload.deltaX,
         message.payload.deltaY,
       );
-      this.broadcastSync();
     } else {
       logger.info("Unknown message type:", message.type);
     }
+  }
+
+  private startTickLoop(): void {
+    setInterval(() => {
+      this.world.tick(this.tickRateMs);
+      this.broadcastSync();
+    }, this.tickRateMs);
   }
 
   private broadcastSync(): void {
