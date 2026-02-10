@@ -9,7 +9,8 @@ export class StateManager {
   private usedColors: Set<string>;
   private engine: Matter.Engine;
   private readonly dotSize = 50;
-  private readonly boundsSize = 500;
+  private readonly boundsWidth = 800;
+  private readonly boundsHeight = 600;
   private readonly wallThickness = 50;
 
   constructor() {
@@ -34,8 +35,8 @@ export class StateManager {
 
   addDot(playerId: string): void {
     const half = this.dotSize / 2;
-    const x = Math.random() * (this.boundsSize - this.dotSize) + half;
-    const y = Math.random() * (this.boundsSize - this.dotSize) + half;
+    const x = Math.random() * (this.boundsWidth - this.dotSize) + half;
+    const y = Math.random() * (this.boundsHeight - this.dotSize) + half;
     const color = this.getAvailableColor();
 
     const body = Matter.Bodies.rectangle(x, y, this.dotSize, this.dotSize, {
@@ -60,7 +61,10 @@ export class StateManager {
     const body = this.bodies.get(playerId);
     if (body) {
       // Move by setting velocity or position
-      Matter.Body.setVelocity(body, { x: deltaX, y: deltaY });
+      Matter.Body.setPosition(body, {
+        x: body.position.x + deltaX,
+        y: body.position.y + deltaY,
+      });
     }
   }
 
@@ -69,36 +73,37 @@ export class StateManager {
   }
 
   private createWalls(): void {
-    const half = this.boundsSize / 2;
+    const halfWidth = this.boundsWidth / 2;
+    const halfHeight = this.boundsHeight / 2;
     const thickness = this.wallThickness;
     const offset = thickness / 2;
 
     const top = Matter.Bodies.rectangle(
-      half,
+      halfWidth,
       -offset,
-      this.boundsSize + thickness * 2,
+      this.boundsWidth + thickness * 2,
       thickness,
       { isStatic: true, label: "wall-top" },
     );
     const bottom = Matter.Bodies.rectangle(
-      half,
-      this.boundsSize + offset,
-      this.boundsSize + thickness * 2,
+      halfWidth,
+      this.boundsHeight + offset,
+      this.boundsWidth + thickness * 2,
       thickness,
       { isStatic: true, label: "wall-bottom" },
     );
     const left = Matter.Bodies.rectangle(
       -offset,
-      half,
+      halfHeight,
       thickness,
-      this.boundsSize + thickness * 2,
+      this.boundsHeight + thickness * 2,
       { isStatic: true, label: "wall-left" },
     );
     const right = Matter.Bodies.rectangle(
-      this.boundsSize + offset,
-      half,
+      this.boundsWidth + offset,
+      halfHeight,
       thickness,
-      this.boundsSize + thickness * 2,
+      this.boundsHeight + thickness * 2,
       { isStatic: true, label: "wall-right" },
     );
 
