@@ -12,15 +12,13 @@ type SyncPayload = {
   worldState: Dot[];
 };
 
-
 // SESSION
 export interface Player {
   id: string;
   host: string;
 }
 
-
-// STATE/GAME 
+// STATE/GAME
 export interface Dot {
   id: string;
   x: number;
@@ -28,4 +26,7 @@ export interface Dot {
   color: string;
 }
 
-
+export interface BotsConfig {
+  enabled: boolean;
+  count: number;
+}
