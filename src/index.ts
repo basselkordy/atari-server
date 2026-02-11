@@ -1,13 +1,15 @@
 import { IncomingMessage } from "node:http";
 import { WebSocket } from "ws";
 import { BotsManager } from "./bots.manager";
+import { PhysicsManager } from "./physics.manager";
 import { StateManager } from "./state.manager";
 import { NetworkManager } from "./network.manager";
 import { SessionManager } from "./session.manager";
 import { BotsConfig } from "./types";
 
 const PORT = Number(process.env.PORT);
-const world = new StateManager();
+const physics = new PhysicsManager();
+const world = new StateManager(physics);
 const botsConfig: BotsConfig = {
   enabled: process.env.BOTS_ENABLED === "true",
   count: Number(process.env.BOTS_COUNT ?? "0"),
