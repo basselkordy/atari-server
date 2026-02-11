@@ -1,22 +1,26 @@
-import { Message } from "./types";
-import { Dot } from "./types"
+import { Message, Dot, GameMap } from "./types";
 
 export class MessageFactory {
-  static createWelcome(clientId: string, worldState: Dot[]): Message {
+  static createWelcome(
+    clientId: string,
+    snapshot: { dots: Dot[]; map: GameMap },
+  ): Message {
     return {
       type: "WELCOME",
       payload: {
         id: clientId,
-        worldState,
+        worldState: snapshot.dots,
+        map: snapshot.map,
       },
     };
   }
 
-  static createSync(worldState: Dot[]): Message {
+  static createSync(snapshot: { dots: Dot[]; map: GameMap }): Message {
     return {
       type: "SYNC",
       payload: {
-        worldState,
+        worldState: snapshot.dots,
+        map: snapshot.map,
       },
     };
   }

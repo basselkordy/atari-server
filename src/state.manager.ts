@@ -1,8 +1,9 @@
-import { Dot } from "./types";
+import { Dot, GameMap } from "./types";
 import { PhysicsManager } from "./physics.manager";
 
 export class StateManager {
   private dots: Map<string, Dot>;
+  private readonly map: GameMap;
   private availableColors: string[];
   private usedColors: Set<string>;
   private readonly dotSize = 50;
@@ -10,8 +11,9 @@ export class StateManager {
   private readonly boundsHeight = 600;
   private readonly physics: PhysicsManager;
 
-  constructor(physics: PhysicsManager) {
+  constructor(physics: PhysicsManager, map: GameMap) {
     this.dots = new Map();
+    this.map = map;
     this.availableColors = [
       "#FF6B6B",
       "#4ECDC4",
@@ -24,6 +26,28 @@ export class StateManager {
     ];
     this.usedColors = new Set();
     this.physics = physics;
+
+    // Add all walls as static bodies
+    for (const wall of map.walls) {
+      this.physics.addStaticBody(
+        wall.id,
+        wall.x,
+        wall.y,
+        wall.width,
+        wall.height,
+      );
+    }
+
+    // Add all platforms as static bodies
+    for (const platform of map.platforms) {
+      this.physics.addStaticBody(
+        platform.id,
+        platform.x,
+        platform.y,
+        platform.width,
+        platform.height,
+      );
+    }
   }
 
   addDot(playerId: string): void {
@@ -61,7 +85,8 @@ export class StateManager {
     this.physics.removeBody(playerId);
   }
 
-  getSnapshot(): Dot[] {
+  getSnapshot(): { dots: Dot[]; map: GameMap } {
+    // TODO: Only send map in WELCOME, not every SYNC tick (bandwidth optimization)
     for (const [playerId, dot] of this.dots.entries()) {
       const position = this.physics.getBodyPosition(playerId);
       if (position) {
@@ -69,7 +94,10 @@ export class StateManager {
         dot.y = Number(position.y.toFixed(3));
       }
     }
-    return Array.from(this.dots.values());
+    return {
+      dots: Array.from(this.dots.values()),
+      map: this.map,
+    };
   }
 
   private getAvailableColor(): string {

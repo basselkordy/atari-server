@@ -61,7 +61,9 @@ export class SessionManager {
 
   private startTickLoop(): void {
     setInterval(() => {
+      // update world
       this.world.tick(this.tickRateMs);
+      // broadcast new state to all clients
       this.broadcastSync();
     }, this.tickRateMs);
   }
