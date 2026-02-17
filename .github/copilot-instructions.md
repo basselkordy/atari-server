@@ -8,6 +8,15 @@
 - `StateManager.tick(deltaMs)` advances physics; `SessionManager` broadcasts SYNC each tick.
 - Bots are created and moved in `BotsManager` with its own interval; enable via `BOTS_ENABLED=true` and set count with `BOTS_COUNT` at startup.
 
+## Client–Server Contract
+
+- **No backwards compatibility required** for client message changes; server and client are updated together.
+- **INTENT message payload**: `{ id: string, left: boolean, right: boolean, down: boolean, jump: boolean }`
+  - `left`/`right`: horizontal movement direction (booleans, not axes).
+  - `down`: drop through a platform.
+  - `jump`: edge-triggered by the client (send `true` only on the frame the key is first pressed, not while held). Server decides: grounded → jump, airborne + 1 jump used → double jump, 2 jumps used → ignore.
+- Movement model is velocity-based (applied in `PhysicsManager`), not teleportation.
+
 ## Learning Notes
 
 This is a learning project touching these concepts:

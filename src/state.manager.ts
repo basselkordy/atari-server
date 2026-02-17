@@ -1,8 +1,10 @@
 import { Dot, GameMap } from "./types";
-import { PhysicsManager } from "./physics.manager";
+import { PhysicsManager } from "./physics/physics.manager";
+import { PlayerIntent } from "./physics/types";
 
 export class StateManager {
   private dots: Map<string, Dot>;
+  private intents: Map<string, PlayerIntent>;
   private readonly map: GameMap;
   private availableColors: string[];
   private usedColors: Set<string>;
@@ -13,6 +15,7 @@ export class StateManager {
 
   constructor(physics: PhysicsManager, map: GameMap) {
     this.dots = new Map();
+    this.intents = new Map();
     this.map = map;
     this.availableColors = [
       "#FF6B6B",
@@ -35,6 +38,7 @@ export class StateManager {
         wall.y,
         wall.width,
         wall.height,
+        "wall",
       );
     }
 
@@ -46,6 +50,7 @@ export class StateManager {
         platform.y,
         platform.width,
         platform.height,
+        "platform",
       );
     }
   }
@@ -68,12 +73,27 @@ export class StateManager {
     this.usedColors.add(color);
   }
 
-  move(playerId: string, deltaX: number, deltaY: number): void {
-    this.physics.moveBody(playerId, deltaX, deltaY);
+  move(
+    playerId: string,
+    left: boolean,
+    right: boolean,
+    down: boolean,
+    jump: boolean,
+  ): void {
+    const existing = this.intents.get(playerId);
+    if (existing) {
+      existing.left = left;
+      existing.right = right;
+      existing.down = existing.down || down;
+      existing.jump = existing.jump || jump;
+    } else {
+      this.intents.set(playerId, { left, right, down, jump });
+    }
   }
 
   tick(deltaMs: number): void {
-    this.physics.tick(deltaMs);
+    this.physics.tick(deltaMs, this.intents);
+    this.intents.clear();
   }
 
   removeDot(playerId: string): void {
@@ -82,6 +102,7 @@ export class StateManager {
       this.usedColors.delete(dot.color);
     }
     this.dots.delete(playerId);
+    this.intents.delete(playerId);
     this.physics.removeBody(playerId);
   }
 

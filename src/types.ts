@@ -1,5 +1,5 @@
 // MESSAGES
-export type MessageType = "WELCOME" | "SYNC";
+export type MessageType = "WELCOME" | "SYNC" | "INTENT";
 export interface Message {
   type: MessageType;
   payload: any;
@@ -12,6 +12,13 @@ type WelcomePayload = {
 type SyncPayload = {
   worldState: Dot[];
   map: GameMap;
+};
+export type IntentPayload = {
+  id: string;
+  left: boolean;
+  right: boolean;
+  down: boolean;
+  jump: boolean;
 };
 
 // SESSION

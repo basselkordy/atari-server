@@ -5,7 +5,6 @@ export class BotsManager {
   private readonly state: StateManager;
   private readonly botIds: string[];
   private readonly tickIntervalMs = 100;
-  private readonly moveDelta = 4;
   private timer: NodeJS.Timeout | null;
 
   constructor(state: StateManager, config: BotsConfig) {
@@ -37,13 +36,10 @@ export class BotsManager {
 
   private tick(): void {
     for (const botId of this.botIds) {
-      const deltaX = this.randomDelta();
-      const deltaY = this.randomDelta();
-      this.state.move(botId, deltaX, deltaY);
+      const left = Math.random() < 0.3;
+      const right = !left && Math.random() < 0.3;
+      const jump = Math.random() < 0.1;
+      this.state.move(botId, left, right, false, jump);
     }
-  }
-
-  private randomDelta(): number {
-    return (Math.random() * 2 - 1) * this.moveDelta;
   }
 }

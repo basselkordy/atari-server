@@ -51,8 +51,10 @@ export class SessionManager {
     if (message.type === "INTENT") {
       this.world.move(
         message.payload.id,
-        message.payload.deltaX,
-        message.payload.deltaY,
+        message.payload.left,
+        message.payload.right,
+        message.payload.down,
+        message.payload.jump,
       );
     } else {
       logger.info("Unknown message type:", message.type);

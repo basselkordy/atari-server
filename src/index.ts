@@ -1,7 +1,7 @@
 import { IncomingMessage } from "node:http";
 import { WebSocket } from "ws";
 import { BotsManager } from "./bots.manager";
-import { PhysicsManager } from "./physics.manager";
+import { PhysicsManager } from "./physics/physics.manager";
 import { StateManager } from "./state.manager";
 import { NetworkManager } from "./network.manager";
 import { SessionManager } from "./session.manager";
