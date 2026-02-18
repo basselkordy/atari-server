@@ -1,4 +1,5 @@
-import { Message, Dot, GameMap } from "./types";
+import { Message } from "./network/types";
+import { Dot, GameMap } from "./types";
 
 export class MessageFactory {
   static createWelcome(

@@ -1,25 +1,18 @@
-import express from "express";
 import { createServer } from "node:http";
-import { WebSocketServer, WebSocket, RawData } from "ws";
-import logger from "./logger";
+import { WebSocketServer, WebSocket } from "ws";
+import logger from "../logger";
 import { Message } from "./types";
 
-export class NetworkManager {
+export class GameServer {
   private wss: WebSocketServer;
 
   constructor(port: number, onConnection: Function) {
-    const app = express();
-    const server = createServer(app);
+    const server = createServer();
     this.wss = new WebSocketServer({ server });
     this.wss.on("connection", (ws, req) => onConnection(ws, req));
 
-    app.get("/", (req, res) => {
-      logger.info("Root endpoint hit");
-      res.send("hello world ");
-    });
-
     server.listen(port, () => {
-      logger.info(`🚀 Server listening on port ${port}`);
+      logger.info(`🎮 Game server listening on port ${port}`);
     });
   }
 

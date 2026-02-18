@@ -1,12 +1,12 @@
 import { IncomingMessage } from "node:http";
-import { Player } from "./types";
+import { Player } from "./network/types";
 import { WebSocket } from "ws";
 
 // @ts-ignore
 import { hri } from "human-readable-ids";
 import logger from "./logger";
 import { StateManager } from "./state.manager";
-import { NetworkManager } from "./network.manager";
+import { GameServer } from "./network/game.server";
 import { MessageFactory } from "./message.factory";
 
 export class SessionManager {
@@ -15,7 +15,7 @@ export class SessionManager {
 
   constructor(
     private stateManager: StateManager,
-    private networkManager: NetworkManager,
+    private gameServer: GameServer,
   ) {
     this.players = new Map<WebSocket, Player>();
     this.startTickLoop();
@@ -74,7 +74,7 @@ export class SessionManager {
 
   private broadcastSync(): void {
     const message = MessageFactory.createSync(this.stateManager.getSnapshot());
-    this.networkManager.broadcast(message);
+    this.gameServer.broadcast(message);
   }
 
   private addPlayer(ws: WebSocket, message: IncomingMessage): string {

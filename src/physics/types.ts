@@ -8,6 +8,23 @@ export const COLLISION_CATEGORIES = {
   PLAYER: 0x0004,
 };
 
+// --- Config ---
+
+export interface WorldPhysicsConfig {
+  gravity: number;
+  dropThroughDurationMs: number;
+}
+
+export interface PlayerPhysicsConfig {
+  moveSpeed: number;
+  jumpForce: number;
+  friction: number;
+  frictionAir: number;
+  restitution: number;
+  inertia: number;
+  chamferRadius: number;
+}
+
 // --- Intents ---
 
 export interface PlayerIntent {
@@ -25,6 +42,7 @@ export interface DynamicBody {
   jumpsUsed: number;
   droppingUntil: number;
   standingOnPlatform: boolean;
+  config: PlayerPhysicsConfig;
 }
 
 // --- Static Bodies ---
