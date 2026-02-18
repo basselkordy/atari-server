@@ -5,6 +5,7 @@ import { PlayerIntent } from "./physics/types";
 export class StateManager {
   private dots: Map<string, Dot>;
   private intents: Map<string, PlayerIntent>;
+  private pendingRemovals: Set<string>;
   private readonly map: GameMap;
   private availableColors: string[];
   private usedColors: Set<string>;
@@ -16,6 +17,7 @@ export class StateManager {
   constructor(physics: PhysicsManager, map: GameMap) {
     this.dots = new Map();
     this.intents = new Map();
+    this.pendingRemovals = new Set();
     this.map = map;
     this.availableColors = [
       "#FF6B6B",
@@ -97,13 +99,20 @@ export class StateManager {
   }
 
   removeDot(playerId: string): void {
-    const dot = this.dots.get(playerId);
-    if (dot) {
-      this.usedColors.delete(dot.color);
+    this.pendingRemovals.add(playerId);
+  }
+
+  processPendingRemovals(): void {
+    for (const playerId of this.pendingRemovals) {
+      const dot = this.dots.get(playerId);
+      if (dot) {
+        this.usedColors.delete(dot.color);
+      }
+      this.dots.delete(playerId);
+      this.intents.delete(playerId);
+      this.physics.removeBody(playerId);
     }
-    this.dots.delete(playerId);
-    this.intents.delete(playerId);
-    this.physics.removeBody(playerId);
+    this.pendingRemovals.clear();
   }
 
   getSnapshot(): { dots: Dot[]; map: GameMap } {

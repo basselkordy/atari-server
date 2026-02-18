@@ -14,8 +14,8 @@ export class SessionManager {
   private readonly tickRateMs = 1000 / 60;
 
   constructor(
-    private world: StateManager,
-    private network: NetworkManager,
+    private stateManager: StateManager,
+    private networkManager: NetworkManager,
   ) {
     this.players = new Map<WebSocket, Player>();
     this.startTickLoop();
@@ -23,12 +23,12 @@ export class SessionManager {
 
   public handleConnection(ws: WebSocket, req: IncomingMessage): void {
     const playerId = this.addPlayer(ws, req);
-    this.world.addDot(playerId);
+    this.stateManager.addDot(playerId);
 
     // Send WELCOME
     const welcomeMessage = MessageFactory.createWelcome(
       playerId,
-      this.world.getSnapshot(),
+      this.stateManager.getSnapshot(),
     );
     ws.send(JSON.stringify(welcomeMessage));
     logger.info(`Sent WELCOME to ${playerId}`);
@@ -43,13 +43,13 @@ export class SessionManager {
     ws.on("close", () => {
       logger.info(`Client ${playerId} disconnected`);
       this.removePlayer(ws);
-      this.world.removeDot(playerId);
+      this.stateManager.removeDot(playerId);
     });
   }
 
   private handleMessage(message: any): void {
     if (message.type === "INTENT") {
-      this.world.move(
+      this.stateManager.move(
         message.payload.id,
         message.payload.left,
         message.payload.right,
@@ -64,15 +64,17 @@ export class SessionManager {
   private startTickLoop(): void {
     setInterval(() => {
       // update world
-      this.world.tick(this.tickRateMs);
+      this.stateManager.tick(this.tickRateMs);
+      // process any pending removals
+      this.stateManager.processPendingRemovals();
       // broadcast new state to all clients
       this.broadcastSync();
     }, this.tickRateMs);
   }
 
   private broadcastSync(): void {
-    const message = MessageFactory.createSync(this.world.getSnapshot());
-    this.network.broadcast(message);
+    const message = MessageFactory.createSync(this.stateManager.getSnapshot());
+    this.networkManager.broadcast(message);
   }
 
   private addPlayer(ws: WebSocket, message: IncomingMessage): string {
