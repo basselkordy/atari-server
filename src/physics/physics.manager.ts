@@ -1,16 +1,19 @@
 import Matter from "matter-js";
-import { DynamicBody, PlayerIntent, StaticBody, StaticBodyType } from "./types";
+import {
+  COLLISION_CATEGORIES,
+  DynamicBody,
+  PlayerIntent,
+  StaticBodyType,
+} from "./types";
 
 export class PhysicsManager {
   private dynamicBodies: Map<string, DynamicBody>;
-  private staticBodies: Map<string, StaticBody>;
   private engine: Matter.Engine;
   private readonly moveSpeed = 5;
   private readonly jumpForce = -8;
 
   constructor() {
     this.dynamicBodies = new Map();
-    this.staticBodies = new Map();
     this.engine = Matter.Engine.create();
     this.engine.gravity.y = 1;
 
@@ -20,35 +23,55 @@ export class PhysicsManager {
   private registerCollisionEvents(): void {
     Matter.Events.on(this.engine, "collisionStart", (event) => {
       for (const pair of event.pairs) {
-        this.handleCollision(pair, true);
+        this.updateGroundedState(pair, true);
       }
     });
 
     Matter.Events.on(this.engine, "collisionEnd", (event) => {
       for (const pair of event.pairs) {
-        this.handleCollision(pair, false);
+        this.updateGroundedState(pair, false);
       }
     });
   }
 
-  private handleCollision(pair: Matter.Pair, isStart: boolean): void {
-    const dynamic =
-      this.dynamicBodies.get(pair.bodyA.label) ??
-      this.dynamicBodies.get(pair.bodyB.label);
-    const static_ =
-      this.staticBodies.get(pair.bodyA.label) ??
-      this.staticBodies.get(pair.bodyB.label);
+  private updateGroundedState(pair: Matter.Pair, isStart: boolean): void {
+    const bodyA = pair.bodyA;
+    const bodyB = pair.bodyB;
 
-    if (!dynamic || !static_) return;
+    let playerBody: Matter.Body | null = null;
+    let groundBody: Matter.Body | null = null;
+
+    if (bodyA.collisionFilter.category === COLLISION_CATEGORIES.PLAYER) {
+      playerBody = bodyA;
+      groundBody = bodyB;
+    } else if (bodyB.collisionFilter.category === COLLISION_CATEGORIES.PLAYER) {
+      playerBody = bodyB;
+      groundBody = bodyA;
+    }
+
+    if (!playerBody || !groundBody) return;
+
+    const isGround =
+      groundBody.collisionFilter.category === COLLISION_CATEGORIES.WALL ||
+      groundBody.collisionFilter.category === COLLISION_CATEGORIES.PLATFORM;
+
+    if (!isGround) return;
+
+    const dynamic = this.dynamicBodies.get(playerBody.label)!;
 
     // Only count as grounded if dynamic body is above the static body
-    if (dynamic.body.position.y >= static_.body.position.y) return;
+    if (playerBody.position.y >= groundBody.position.y) return;
+
+    const isPlatform =
+      groundBody.collisionFilter.category === COLLISION_CATEGORIES.PLATFORM;
 
     if (isStart) {
       dynamic.grounded = true;
       dynamic.jumpsUsed = 0;
+      dynamic.standingOnPlatform = isPlatform;
     } else {
       dynamic.grounded = false;
+      dynamic.standingOnPlatform = false;
     }
   }
 
@@ -60,9 +83,19 @@ export class PhysicsManager {
       frictionAir: 0,
       inertia: Infinity,
       chamfer: { radius: 5 },
+      collisionFilter: {
+        category: COLLISION_CATEGORIES.PLAYER,
+        mask: COLLISION_CATEGORIES.WALL | COLLISION_CATEGORIES.PLATFORM,
+      },
     });
     Matter.World.add(this.engine.world, body);
-    this.dynamicBodies.set(id, { body, grounded: false, jumpsUsed: 0 });
+    this.dynamicBodies.set(id, {
+      body,
+      grounded: false,
+      jumpsUsed: 0,
+      droppingUntil: 0,
+      standingOnPlatform: false,
+    });
   }
 
   addStaticBody(
@@ -73,12 +106,19 @@ export class PhysicsManager {
     height: number,
     type: StaticBodyType,
   ): void {
+    const category =
+      type === "platform"
+        ? COLLISION_CATEGORIES.PLATFORM
+        : COLLISION_CATEGORIES.WALL;
+
     const body = Matter.Bodies.rectangle(x, y, width, height, {
       isStatic: true,
       label: id,
+      collisionFilter: {
+        category,
+      },
     });
     Matter.World.add(this.engine.world, body);
-    this.staticBodies.set(id, { body, type });
   }
 
   removeBody(id: string): void {
@@ -86,13 +126,6 @@ export class PhysicsManager {
     if (dynamic) {
       Matter.World.remove(this.engine.world, dynamic.body);
       this.dynamicBodies.delete(id);
-      return;
-    }
-
-    const static_ = this.staticBodies.get(id);
-    if (static_) {
-      Matter.World.remove(this.engine.world, static_.body);
-      this.staticBodies.delete(id);
     }
   }
 
@@ -102,10 +135,41 @@ export class PhysicsManager {
   }
 
   private applyIntents(intents: Map<string, PlayerIntent>): void {
+    const now = Date.now();
+
     for (const [id, intent] of intents) {
       const dynamic = this.dynamicBodies.get(id);
       if (!dynamic) continue;
 
+      // Handle drop-through: start timer if pressing down while grounded on platform
+      if (
+        intent.down &&
+        dynamic.grounded &&
+        dynamic.standingOnPlatform &&
+        dynamic.droppingUntil === 0
+      ) {
+        dynamic.droppingUntil = now + 300; // 300ms drop-through window
+      }
+
+      // Calculate collision mask
+      const isDroppingThrough = now < dynamic.droppingUntil;
+      const isMovingUp = dynamic.body.velocity.y < 0;
+      const shouldIgnorePlatforms = isDroppingThrough || isMovingUp;
+
+      const newMask = shouldIgnorePlatforms
+        ? COLLISION_CATEGORIES.WALL
+        : COLLISION_CATEGORIES.WALL | COLLISION_CATEGORIES.PLATFORM;
+
+      if (dynamic.body.collisionFilter.mask !== newMask) {
+        dynamic.body.collisionFilter.mask = newMask;
+      }
+
+      // Reset dropping timer if no longer dropping
+      if (!isDroppingThrough && dynamic.droppingUntil > 0) {
+        dynamic.droppingUntil = 0;
+      }
+
+      // Apply movement
       const speed = this.moveSpeed;
       let vx = 0;
       if (intent.left) vx -= speed;
