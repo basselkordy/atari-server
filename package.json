@@ -4,8 +4,8 @@
   "type": "module",
   "packageManager": "yarn@4.9.1",
   "scripts": {
-    "comment": "Change Code Page to 65001 (aka UTF-8), then run my shit",
-    "dev": "chcp 65001 && tsx watch --env-file=.env src/index.ts"
+    "dev": "chcp 65001 && tsx watch --env-file=.env src/index.ts",
+    "dev:linux": "tsx watch --env-file=.env src/index.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",
