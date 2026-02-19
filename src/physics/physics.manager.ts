@@ -21,7 +21,7 @@ export class PhysicsManager {
 
     this.worldConfig = {
       gravity: 1,
-      dropThroughDurationMs: 300,
+      dropThroughDurationMs: 400,
     };
 
     this.defaultPlayerConfig = {
