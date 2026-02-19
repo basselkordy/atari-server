@@ -11,6 +11,11 @@ export class ConfigServer {
     app.use(cors());
     app.use(express.json());
 
+
+    app.get("/", (req, res) => {
+      res.json({ message: "Config server is running" });
+    })
+    
     app.patch("/world/physics", (req, res) => {
       const config: Partial<WorldPhysicsConfig> = req.body;
       physics.updateWorldConfig(config);
