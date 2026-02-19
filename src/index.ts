@@ -10,7 +10,7 @@ import { BotsConfig } from "./types";
 import { createMap } from "./map.factory";
 
 const GAME_PORT = Number(process.env.GAME_PORT);
-const CONFIG_PORT = Number(process.env.CONFIG_PORT ?? 3001);
+const API_PORT = Number(process.env.API_PORT);
 const physics = new PhysicsManager();
 const map = createMap();
 const worldStateManager = new StateManager(physics, map);
@@ -24,7 +24,7 @@ if (botsConfig.enabled && botsConfig.count > 0) {
 }
 
 const gameServer = new GameServer(GAME_PORT, onConnection);
-const configServer = new ConfigServer(CONFIG_PORT, physics);
+const configServer = new ConfigServer(API_PORT, physics);
 const sessionManager = new SessionManager(worldStateManager, gameServer);
 
 function onConnection(ws: WebSocket, message: IncomingMessage) {
