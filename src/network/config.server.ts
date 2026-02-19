@@ -12,18 +12,18 @@ export class ConfigServer {
     app.use(express.json());
 
 
-    app.get("/", (req, res) => {
+    app.get("api/", (req, res) => {
       res.json({ message: "Config server is running" });
     })
     
-    app.patch("/world/physics", (req, res) => {
+    app.patch("api/world/physics", (req, res) => {
       const config: Partial<WorldPhysicsConfig> = req.body;
       physics.updateWorldConfig(config);
       logger.info(`Updated world physics config: ${JSON.stringify(config)}`);
       res.json({ ok: true });
     });
 
-    app.patch("/players/:playerId/physics", (req, res) => {
+    app.patch("api/players/:playerId/physics", (req, res) => {
       const { playerId } = req.params;
       const config: Partial<PlayerPhysicsConfig> = req.body;
       physics.updatePlayerConfig(playerId, config);
