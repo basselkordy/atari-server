@@ -1,6 +1,6 @@
 // --- Messages ---
 
-export type MessageType = "WELCOME" | "SYNC" | "INTENT";
+export type MessageType = "WELCOME" | "SYNC" | "INTENT" | "PING" | "PONG";
 
 export interface Message {
   type: MessageType;
@@ -16,6 +16,10 @@ export type WelcomePayload = {
 export type SyncPayload = {
   worldState: import("../types").Dot[];
   map: import("../types").GameMap;
+  lastIntentSeq: number | null;
+  lastIntentSentAt: number | null;
+  physicsDurationMs: number;
+  broadcastDurationMs: number;
 };
 
 export type IntentPayload = {
@@ -24,6 +28,17 @@ export type IntentPayload = {
   right: boolean;
   down: boolean;
   jump: boolean;
+  seq: number;
+  sentAt: number;
+};
+
+export type PingPayload = {
+  clientTime: number;
+};
+
+export type PongPayload = {
+  clientTime: number;
+  serverTime: number;
 };
 
 // --- Session ---

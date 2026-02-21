@@ -12,6 +12,7 @@ import { MessageFactory } from "./message.factory";
 export class SessionManager {
   private players: Map<WebSocket, Player>;
   private readonly tickRateMs = 1000 / 60;
+  private lastBroadcastDurationMs = 0;
 
   constructor(
     private stateManager: StateManager,
@@ -37,7 +38,7 @@ export class SessionManager {
     ws.on("message", (data) => {
       logger.debug(`Received message from ${playerId}: ${data}`);
       const message = JSON.parse(data.toString());
-      this.handleMessage(message);
+      this.handleMessage(ws, message);
     });
 
     ws.on("close", () => {
@@ -47,7 +48,7 @@ export class SessionManager {
     });
   }
 
-  private handleMessage(message: any): void {
+  private handleMessage(ws: WebSocket, message: any): void {
     if (message.type === "INTENT") {
       this.stateManager.move(
         message.payload.id,
@@ -55,7 +56,17 @@ export class SessionManager {
         message.payload.right,
         message.payload.down,
         message.payload.jump,
+        message.payload.seq ?? 0,
+        message.payload.sentAt ?? 0,
       );
+    } else if (message.type === "PING") {
+      if (ws.readyState === ws.OPEN) {
+        const pong = MessageFactory.createPong(
+          message.payload.clientTime,
+          Date.now(),
+        );
+        ws.send(JSON.stringify(pong));
+      }
     } else {
       logger.info("Unknown message type:", message.type);
     }
@@ -63,18 +74,37 @@ export class SessionManager {
 
   private startTickLoop(): void {
     setInterval(() => {
-      // update world
+      // Measure physics duration
+      const physicsStart = Date.now();
       this.stateManager.tick(this.tickRateMs);
-      // process any pending removals
+      const physicsDurationMs = Date.now() - physicsStart;
+
       this.stateManager.processPendingRemovals();
-      // broadcast new state to all clients
-      this.broadcastSync();
+
+      // Measure broadcast duration (measures JSON serialization + ws.send hand-off,
+      // NOT wire transmission time — ws.send() returns before bytes leave the machine)
+      const broadcastStart = Date.now();
+      this.broadcastSync(physicsDurationMs);
+      this.lastBroadcastDurationMs = Date.now() - broadcastStart;
     }, this.tickRateMs);
   }
 
-  private broadcastSync(): void {
-    const message = MessageFactory.createSync(this.stateManager.getSnapshot());
-    this.gameServer.broadcast(message);
+  private broadcastSync(physicsDurationMs: number): void {
+    const snapshot = this.stateManager.getSnapshot();
+
+    this.players.forEach((player, ws) => {
+      if (ws.readyState !== ws.OPEN) return;
+
+      const diagnostic = this.stateManager.getIntentDiagnostic(player.id);
+      const message = MessageFactory.createSync(
+        snapshot,
+        diagnostic?.seq ?? null,
+        diagnostic?.sentAt ?? null,
+        physicsDurationMs,
+        this.lastBroadcastDurationMs,
+      );
+      ws.send(JSON.stringify(message));
+    });
   }
 
   private addPlayer(ws: WebSocket, message: IncomingMessage): string {

@@ -5,6 +5,7 @@ import { PlayerIntent } from "./physics/types";
 export class StateManager {
   private dots: Map<string, Dot>;
   private intents: Map<string, PlayerIntent>;
+  private intentDiagnostics: Map<string, { seq: number; sentAt: number }>;
   private pendingRemovals: Set<string>;
   private readonly map: GameMap;
   private availableColors: string[];
@@ -17,6 +18,7 @@ export class StateManager {
   constructor(physics: PhysicsManager, map: GameMap) {
     this.dots = new Map();
     this.intents = new Map();
+    this.intentDiagnostics = new Map();
     this.pendingRemovals = new Set();
     this.map = map;
     this.availableColors = [
@@ -81,6 +83,8 @@ export class StateManager {
     right: boolean,
     down: boolean,
     jump: boolean,
+    seq: number,
+    sentAt: number,
   ): void {
     const existing = this.intents.get(playerId);
     if (existing) {
@@ -91,6 +95,11 @@ export class StateManager {
     } else {
       this.intents.set(playerId, { left, right, down, jump });
     }
+    this.intentDiagnostics.set(playerId, { seq, sentAt });
+  }
+
+  getIntentDiagnostic(playerId: string): { seq: number; sentAt: number } | null {
+    return this.intentDiagnostics.get(playerId) ?? null;
   }
 
   tick(deltaMs: number): void {
@@ -110,6 +119,7 @@ export class StateManager {
       }
       this.dots.delete(playerId);
       this.intents.delete(playerId);
+      this.intentDiagnostics.delete(playerId);
       this.physics.removeBody(playerId);
     }
     this.pendingRemovals.clear();
